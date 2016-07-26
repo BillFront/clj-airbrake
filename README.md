@@ -47,6 +47,7 @@ Below is an example of the `airbrake-configuration`:
  :environment-name "env"   ;optional
  :root-dirctory "/app/dir" ;optional
 
+ :host "https://example.com"                   ;optional, defaults to 'https://airbrake.io'
  :ignored-environments #{"test" "development"} ;optional but defaults to 'development' and 'test'
  }
 ```

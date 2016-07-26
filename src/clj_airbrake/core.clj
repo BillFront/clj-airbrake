@@ -41,8 +41,8 @@
     :session (or session {})
     :params (or params {})}))
 
-(defn- get-url [project api-key]
-  (str "https://airbrake.io/api/v3/projects/" project "/notices?key=" api-key))
+(defn- get-url [project api-key host]
+  (str host "/api/v3/projects/" project "/notices?key=" api-key))
 
 (defn handle-response [response]
   (-> response :body (parse-string true)))
@@ -53,8 +53,8 @@
         factory (PrefixThreadFactory. "airbrake-worker-")]
     (ThreadPoolExecutor. max max 60 TimeUnit/SECONDS queue factory)))
 
-(defn send-notice-async [notice callback project api-key]
-  (httpclient/post (get-url project api-key)
+(defn send-notice-async [notice callback project api-key host]
+  (httpclient/post (get-url project api-key host)
                    {:body notice
                     :headers {"Content-Type" "application/json"}
                     :worker-pool thread-pool}
@@ -74,14 +74,14 @@
   ([airbrake-config callback throwable]
    (notify-async callback airbrake-config throwable {}))
   ([airbrake-config callback throwable extra-data]
-   (let [{:keys [environment-name api-key project ignored-environments root-directory]
-          :or {ignored-environments #{"test" "development"}}}
+   (let [{:keys [environment-name api-key project ignored-environments root-directory host]
+          :or {ignored-environments #{"test" "development"} host "https://airbrake.io"}}
          airbrake-config]
      (validate-config airbrake-config)
      (if (is-ignored-environment? environment-name ignored-environments)
        (future nil)
        (-> (make-notice throwable (merge extra-data {:environment-name environment-name :root-directory root-directory}))
-           (send-notice-async callback project api-key))))))
+           (send-notice-async callback project api-key host))))))
 
 (defn notify
   ([airbrake-config]
